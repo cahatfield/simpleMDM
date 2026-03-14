@@ -27,12 +27,12 @@ def _identity_field(table_def: dict) -> str | None:
 
 
 def build_table_block(table_name: str, table_def: dict, required_fields: list,
-                      catalog: str, database: str) -> list[str]:
+                      catalog: str, schema: str) -> list[str]:
     properties = table_def.get("properties", {})
     identity = _identity_field(table_def)
     x_key = table_def.get("x-key", {})
     composite_key = x_key.get("composite_key", [])
-    full_table = f"{catalog}.{database}.{table_name}"
+    full_table = f"{catalog}.{schema}.{table_name}"
     description = table_def.get("description", table_name)
 
     lines = []
@@ -74,7 +74,7 @@ def build_table_block(table_name: str, table_def: dict, required_fields: list,
             fk_name = f"fk_{table_name}_{field}"
             lines.append(
                 f"spark.sql(\"ALTER TABLE {full_table} ADD CONSTRAINT {fk_name} "
-                f"FOREIGN KEY ({field}) REFERENCES {catalog}.{database}.{ref_table}({ref_field})\")"
+                f"FOREIGN KEY ({field}) REFERENCES {catalog}.{schema}.{ref_table}({ref_field})\")"
             )
 
     lines.append(f"print('  Created table: {table_name}')")
@@ -84,17 +84,17 @@ def build_table_block(table_name: str, table_def: dict, required_fields: list,
 
 
 def build_spark_from_schema(schema_path: str, catalog: str = "main",
-                             database: str = None) -> str:
+                             schema: str = None) -> str:
     schema_path = pathlib.Path(schema_path)
-    schema = json.loads(schema_path.read_text())
+    domain_schema = json.loads(schema_path.read_text())
 
-    domain_name = schema["title"]
-    if database is None:
-        database = domain_name.lower()
+    domain_name = domain_schema["title"]
+    if schema is None:
+        schema = domain_name.lower()
     output_path = schema_path.parent / f"{domain_name}_spark.py"
 
     # Order: reference tables before bridge tables
-    definitions = schema.get("definitions", {})
+    definitions = domain_schema.get("definitions", {})
     ref_tables = {}
     bridge_tables = {}
     for table_name, table_def in definitions.items():
@@ -105,7 +105,7 @@ def build_spark_from_schema(schema_path: str, catalog: str = "main",
         else:
             ref_tables[table_name] = table_def
 
-    ordered = [(domain_name, schema, schema.get("required", []))]
+    ordered = [(domain_name, domain_schema, domain_schema.get("required", []))]
     for t, d in ref_tables.items():
         ordered.append((t, d, d.get("required", [])))
     for t, d in bridge_tables.items():
@@ -114,7 +114,7 @@ def build_spark_from_schema(schema_path: str, catalog: str = "main",
     # File header
     lines = [
         f"# Generated PySpark/Delta library for domain: {domain_name}",
-        f"# Catalog: {catalog}  |  Database: {database}",
+        f"# Catalog: {catalog}  |  Schema: {schema}",
         "#",
         "# Run this file in a Databricks notebook or spark-submit job.",
         "",
@@ -123,7 +123,7 @@ def build_spark_from_schema(schema_path: str, catalog: str = "main",
         "",
         "spark = SparkSession.builder.getOrCreate()",
         "",
-        f"spark.sql('CREATE DATABASE IF NOT EXISTS {catalog}.{database}')",
+        f"spark.sql('CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}')",
         "",
     ]
 
@@ -132,7 +132,7 @@ def build_spark_from_schema(schema_path: str, catalog: str = "main",
         lines.append(f"# {table_name}")
         lines.append(f"# {'='*60}")
         lines.append("")
-        lines.extend(build_table_block(table_name, table_def, required, catalog, database))
+        lines.extend(build_table_block(table_name, table_def, required, catalog, schema))
 
     output_path.write_text("\n".join(lines))
     return str(output_path)
