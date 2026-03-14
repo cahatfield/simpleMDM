@@ -87,6 +87,7 @@ class domain:
             "format": "uuid",
             "description": f"System-generated identity field for the {self.name} domain",
             "readOnly": True,
+            "nullable": False,
         }
         if identity_field not in schema["required"]:
             schema["required"].append(identity_field)
@@ -136,6 +137,7 @@ class domain:
                     **type_map[key_type],
                     "description": f"Primary key for {status_table}",
                     "readOnly": True,
+                    "nullable": False,
                 },
                 "status_name": {
                     "type": "string",
@@ -190,6 +192,7 @@ class domain:
                     **type_map[key_type],
                     "description": f"Primary key for {type_table}",
                     "readOnly": True,
+                    "nullable": False,
                 },
                 "type_name": {
                     "type": "string",
@@ -238,6 +241,7 @@ class domain:
                     "format": "uuid",
                     "description": f"System-generated identity key for {attribute_table}",
                     "readOnly": True,
+                    "nullable": False,
                 },
                 "attribute_name": {
                     "type": "string",
@@ -263,6 +267,7 @@ class domain:
                     "format": "uuid",
                     "description": f"System-generated identity key for {bridge_table}",
                     "readOnly": True,
+                    "nullable": False,
                 },
                 identity_field: {
                     "type": "string",
@@ -319,6 +324,7 @@ class domain:
                     "format": "uuid",
                     "description": f"System-generated identity key for {hierarchy_table}",
                     "readOnly": True,
+                    "nullable": False,
                 },
                 hierarchy_name: {
                     "type": "string",
@@ -344,6 +350,7 @@ class domain:
                     "format": "uuid",
                     "description": f"System-generated identity key for {value_table}",
                     "readOnly": True,
+                    "nullable": False,
                 },
                 hierarchy_id: {
                     "type": "string",
@@ -401,6 +408,7 @@ class domain:
                     "format": "uuid",
                     "description": f"System-generated identity key for {rel_table}",
                     "readOnly": True,
+                    "nullable": False,
                 },
                 fk1: {
                     "type": "string",
