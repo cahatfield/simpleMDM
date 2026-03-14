@@ -42,7 +42,8 @@ def build_table_block(table_name: str, table_def: dict, required_fields: list,
     lines.append(f"{schema_var} = StructType([")
     for field, prop in properties.items():
         py_type = json_type_to_pyspark(prop)
-        nullable = "False" if field in required_fields else "True"
+        is_identity = prop.get("readOnly") and prop.get("format") == "uuid"
+        nullable = "False" if field in required_fields or prop.get("nullable") is False or is_identity else "True"
         comment = prop.get("description", "").replace("'", "\\'")
         lines.append(f"    StructField('{field}', {py_type}, nullable={nullable}),  # {comment}")
     lines.append("])")
