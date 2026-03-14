@@ -21,6 +21,9 @@ env/
 # Generated databases
 *.db
 
+# Domain output folders
+domains/
+
 # OS
 .DS_Store
 Thumbs.db
