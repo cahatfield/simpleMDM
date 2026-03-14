@@ -56,8 +56,10 @@ def generate_class(table_name: str, table_def: dict) -> str:
     lines.append(f"class {table_name}Repository:")
     lines.append(f'    """CRUD operations for {table_name}."""')
     lines.append("")
-    lines.append("    def __init__(self, db_path: str):")
+    lines.append("    def __init__(self, db_path: str, catalog: Optional[str] = None, schema: Optional[str] = None):")
     lines.append("        self.db_path = db_path")
+    lines.append("        prefix = '.'.join(p for p in [catalog, schema] if p)")
+    lines.append(f'        self._table = f"{{prefix}}.{table_name}" if prefix else "{table_name}"')
     lines.append("")
 
     # add()
@@ -82,7 +84,7 @@ def generate_class(table_name: str, table_def: dict) -> str:
 
     lines.append(f"        with sqlite3.connect(self.db_path) as conn:")
     lines.append(f"            conn.execute(")
-    lines.append(f'                "INSERT INTO {table_name} ({col_list}) VALUES ({placeholders})",')
+    lines.append(f'                f"INSERT INTO {{self._table}} ({col_list}) VALUES ({placeholders})",')
     lines.append(f"                ({values_str},),")
     lines.append(f"            )")
 
@@ -101,7 +103,7 @@ def generate_class(table_name: str, table_def: dict) -> str:
         lines.append(f"        set_clause = ', '.join(f'{{k}} = ?' for k in fields)")
         lines.append(f"        with sqlite3.connect(self.db_path) as conn:")
         lines.append(f"            conn.execute(")
-        lines.append(f'                f"UPDATE {table_name} SET {{set_clause}} WHERE {identity} = ?",')
+        lines.append(f'                f"UPDATE {{self._table}} SET {{set_clause}} WHERE {identity} = ?",')
         lines.append(f"                (*fields.values(), {identity}),")
         lines.append(f"            )")
         lines.append("")
@@ -110,7 +112,7 @@ def generate_class(table_name: str, table_def: dict) -> str:
         lines.append(f"    def delete(self, {identity}: str) -> None:")
         lines.append(f"        with sqlite3.connect(self.db_path) as conn:")
         lines.append(f"            conn.execute(")
-        lines.append(f'                "DELETE FROM {table_name} WHERE {identity} = ?",')
+        lines.append(f'                f"DELETE FROM {{self._table}} WHERE {identity} = ?",')
         lines.append(f"                ({identity},),")
         lines.append(f"            )")
         lines.append("")
