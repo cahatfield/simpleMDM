@@ -1,0 +1,475 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Product",
+  "type": "object",
+  "properties": {
+    "product_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "System-generated identity field for the Product domain",
+      "readOnly": true
+    },
+    "product_brand_name": {
+      "type": "string",
+      "description": "Natural key field for the Product domain",
+      "x-natural-key": true
+    },
+    "product_catalog_number": {
+      "type": "string",
+      "description": "Natural key field for the Product domain",
+      "x-natural-key": true
+    },
+    "product_description": {
+      "type": "string",
+      "description": "Natural key field for the Product domain",
+      "x-natural-key": true
+    },
+    "status_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Foreign key to Product_Status",
+      "x-key": {
+        "references": "Product_Status",
+        "field": "status_id"
+      }
+    },
+    "type_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Foreign key to Product_Type",
+      "x-key": {
+        "references": "Product_Type",
+        "field": "type_id"
+      }
+    },
+    "create_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time the record was inserted into the table",
+      "readOnly": true
+    },
+    "created_by": {
+      "type": "string",
+      "description": "User who inserted the record into the table",
+      "readOnly": true
+    },
+    "update_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time the record was last updated"
+    },
+    "updated_by": {
+      "type": "string",
+      "description": "User who last updated the record"
+    }
+  },
+  "required": [
+    "product_id",
+    "product_brand_name",
+    "product_catalog_number",
+    "product_description",
+    "status_id",
+    "type_id"
+  ],
+  "x-key": {
+    "identity_field": "product_id",
+    "natural_keys": [
+      "product_brand_name",
+      "product_catalog_number",
+      "product_description"
+    ]
+  },
+  "definitions": {
+    "Product_Status": {
+      "title": "Product_Status",
+      "description": "Status reference table for the Product domain",
+      "type": "object",
+      "properties": {
+        "status_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key for Product_Status",
+          "readOnly": true
+        },
+        "status_name": {
+          "type": "string",
+          "description": "Name of the status"
+        },
+        "status_description": {
+          "type": "string",
+          "description": "Description of what this status means"
+        },
+        "create_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was inserted into the table",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User who inserted the record into the table",
+          "readOnly": true
+        },
+        "update_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was last updated"
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "User who last updated the record"
+        }
+      },
+      "required": [
+        "status_id",
+        "status_name"
+      ]
+    },
+    "Product_Type": {
+      "title": "Product_Type",
+      "description": "Type reference table for the Product domain",
+      "type": "object",
+      "properties": {
+        "type_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Primary key for Product_Type",
+          "readOnly": true
+        },
+        "type_name": {
+          "type": "string",
+          "description": "Name of the type"
+        },
+        "type_description": {
+          "type": "string",
+          "description": "Description of what this type means"
+        },
+        "create_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was inserted into the table",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User who inserted the record into the table",
+          "readOnly": true
+        },
+        "update_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was last updated"
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "User who last updated the record"
+        }
+      },
+      "required": [
+        "type_id",
+        "type_name"
+      ]
+    },
+    "Product_Attribute": {
+      "title": "Product_Attribute",
+      "description": "Attribute reference table for the Product domain",
+      "type": "object",
+      "properties": {
+        "attribute_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "System-generated identity key for Product_Attribute",
+          "readOnly": true
+        },
+        "attribute_name": {
+          "type": "string",
+          "description": "Name of the attribute",
+          "x-natural-key": true
+        },
+        "create_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was inserted into the table",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User who inserted the record into the table",
+          "readOnly": true
+        },
+        "update_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was last updated"
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "User who last updated the record"
+        }
+      },
+      "required": [
+        "attribute_id",
+        "attribute_name"
+      ],
+      "x-key": {
+        "identity_field": "attribute_id",
+        "natural_keys": [
+          "attribute_name"
+        ]
+      }
+    },
+    "Product_Attribute_Value": {
+      "title": "Product_Attribute_Value",
+      "description": "Bridge table linking Product records to their attribute values",
+      "type": "object",
+      "properties": {
+        "product_attribute_value_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "System-generated identity key for Product_Attribute_Value",
+          "readOnly": true
+        },
+        "product_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Foreign key to Product",
+          "x-key": {
+            "references": "Product",
+            "field": "product_id"
+          }
+        },
+        "attribute_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Foreign key to Product_Attribute",
+          "x-key": {
+            "references": "Product_Attribute",
+            "field": "attribute_id"
+          }
+        },
+        "attribute_value": {
+          "type": "string",
+          "description": "Value of the attribute for this domain record"
+        },
+        "create_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was inserted into the table",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User who inserted the record into the table",
+          "readOnly": true
+        },
+        "update_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was last updated"
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "User who last updated the record"
+        }
+      },
+      "required": [
+        "product_attribute_value_id",
+        "product_id",
+        "attribute_id",
+        "attribute_value"
+      ],
+      "x-key": {
+        "identity_field": "product_attribute_value_id",
+        "natural_keys": [
+          "product_id",
+          "attribute_id"
+        ]
+      }
+    },
+    "Product_Hierarchy": {
+      "title": "Product_Hierarchy",
+      "description": "Hierarchy type table for the Product domain",
+      "type": "object",
+      "properties": {
+        "product_hierarchy_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "System-generated identity key for Product_Hierarchy",
+          "readOnly": true
+        },
+        "product_hierarchy_name": {
+          "type": "string",
+          "description": "Name of the hierarchy",
+          "x-natural-key": true
+        },
+        "create_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was inserted into the table",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User who inserted the record into the table",
+          "readOnly": true
+        },
+        "update_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was last updated"
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "User who last updated the record"
+        }
+      },
+      "required": [
+        "product_hierarchy_id",
+        "product_hierarchy_name"
+      ],
+      "x-key": {
+        "identity_field": "product_hierarchy_id",
+        "natural_keys": [
+          "product_hierarchy_name"
+        ]
+      }
+    },
+    "Product_Hierarchy_Value": {
+      "title": "Product_Hierarchy_Value",
+      "description": "Hierarchy value table storing parent/child relationships for the Product domain",
+      "type": "object",
+      "properties": {
+        "product_hierarchy_value_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "System-generated identity key for Product_Hierarchy_Value",
+          "readOnly": true
+        },
+        "product_hierarchy_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Foreign key to Product_Hierarchy",
+          "x-key": {
+            "references": "Product_Hierarchy",
+            "field": "product_hierarchy_id"
+          }
+        },
+        "parent_product_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Foreign key to Product \u2014 the parent record",
+          "x-key": {
+            "references": "Product",
+            "field": "product_id"
+          }
+        },
+        "child_product_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Foreign key to Product \u2014 the child record",
+          "x-key": {
+            "references": "Product",
+            "field": "product_id"
+          }
+        },
+        "create_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was inserted into the table",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User who inserted the record into the table",
+          "readOnly": true
+        },
+        "update_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was last updated"
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "User who last updated the record"
+        }
+      },
+      "required": [
+        "product_hierarchy_value_id",
+        "product_hierarchy_id",
+        "parent_product_id",
+        "child_product_id"
+      ],
+      "x-key": {
+        "identity_field": "product_hierarchy_value_id",
+        "natural_keys": [
+          "product_hierarchy_id",
+          "parent_product_id",
+          "child_product_id"
+        ]
+      }
+    },
+    "Product_Vendor_Relationship": {
+      "title": "Product_Vendor_Relationship",
+      "description": "Relationship bridge table between Product and Vendor",
+      "type": "object",
+      "properties": {
+        "product_vendor_relationship_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "System-generated identity key for Product_Vendor_Relationship",
+          "readOnly": true
+        },
+        "product_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Foreign key to Product",
+          "x-key": {
+            "references": "Product",
+            "field": "product_id"
+          }
+        },
+        "vendor_id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Foreign key to Vendor",
+          "x-key": {
+            "references": "Vendor",
+            "field": "vendor_id"
+          }
+        },
+        "create_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was inserted into the table",
+          "readOnly": true
+        },
+        "created_by": {
+          "type": "string",
+          "description": "User who inserted the record into the table",
+          "readOnly": true
+        },
+        "update_date": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Date and time the record was last updated"
+        },
+        "updated_by": {
+          "type": "string",
+          "description": "User who last updated the record"
+        }
+      },
+      "required": [
+        "product_vendor_relationship_id",
+        "product_id",
+        "vendor_id"
+      ],
+      "x-key": {
+        "identity_field": "product_vendor_relationship_id",
+        "natural_keys": [
+          "product_id",
+          "vendor_id"
+        ]
+      }
+    }
+  }
+}

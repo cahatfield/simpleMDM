@@ -1,0 +1,60 @@
+{
+  "contract_version": "1.0.0",
+  "domain": "Customer",
+  "schema_ref": "Customer.schema.json",
+  "status": "active",
+  "owner": {
+    "name": "Jane Smith",
+    "team": "Customer Data",
+    "email": "jane.smith@example.com"
+  },
+  "consumers": [
+    {
+      "name": "CRM System",
+      "team": "Sales"
+    },
+    {
+      "name": "Analytics Platform",
+      "team": "Data Science"
+    }
+  ],
+  "sla": {
+    "freshness": "daily",
+    "availability": "99.9%"
+  },
+  "quality_rules": {
+    "Customer": {
+      "email": {
+        "pattern": "^[\\w.-]+@[\\w.-]+\\.[a-z]{2,}$",
+        "not_null": true,
+        "unique": true
+      },
+      "first_name": {
+        "min_length": 1,
+        "max_length": 100,
+        "not_null": true
+      },
+      "last_name": {
+        "min_length": 1,
+        "max_length": 100,
+        "not_null": true
+      }
+    },
+    "Customer_Status": {
+      "status_name": {
+        "allowed_values": [
+          "active",
+          "inactive",
+          "suspended"
+        ]
+      }
+    }
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-03-13",
+      "description": "Initial contract for Customer domain"
+    }
+  ]
+}
