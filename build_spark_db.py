@@ -60,6 +60,16 @@ def build_table_block(table_name: str, table_def: dict, required_fields: list,
     lines.append(f")")
     lines.append("")
 
+    # NOT NULL constraints (required before PRIMARY KEY in Databricks)
+    not_null_fields = [
+        f for f, p in properties.items()
+        if f in required_fields or p.get("nullable") is False or (p.get("readOnly") and p.get("format") == "uuid")
+    ]
+    for field in not_null_fields:
+        lines.append(f"spark.sql(\"ALTER TABLE {full_table} ALTER COLUMN {field} SET NOT NULL\")")
+    if not_null_fields:
+        lines.append("")
+
     # Primary key constraint
     if identity and not composite_key:
         lines.append(f"spark.sql(\"ALTER TABLE {full_table} ADD CONSTRAINT pk_{table_name} PRIMARY KEY ({identity})\")")
