@@ -61,15 +61,18 @@ d = domain('Customer')
 
 ---
 
-### `create()`
+### `create(version="1.0.0")`
 
 Initialises the domain — creates the folder and an empty schema file with audit fields.
 
 ```python
-domain('Customer').create()
+domain('Customer').create()           # default version 1.0.0
+domain('Customer').create('2.0.0')    # explicit version
 ```
 
 **Output:** `domains/Customer/Customer.schema.json`
+
+The `version` string is stored at the root of the schema JSON and can be used to track breaking changes to the domain structure.
 
 > Must be called before any other method.
 

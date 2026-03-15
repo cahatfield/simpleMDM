@@ -49,13 +49,14 @@ class domain:
         self.name = name
         self.destination = pathlib.Path(destination) if destination else pathlib.Path("domains")
 
-    def create(self):
+    def create(self, version: str = "1.0.0"):
         folder = self.destination / self.name
         folder.mkdir(parents=True, exist_ok=True)
 
         schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "title": self.name,
+            "version": version,
             "type": "object",
             "properties": {**_audit_fields()},
             "required": [],
