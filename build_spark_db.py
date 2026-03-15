@@ -77,6 +77,12 @@ def build_table_block(table_name: str, table_def: dict, required_fields: list,
         key_cols = ", ".join(composite_key)
         lines.append(f"spark.sql(\"ALTER TABLE {full_table} ADD CONSTRAINT pk_{table_name} PRIMARY KEY ({key_cols})\")")
 
+    # Unique constraint for natural keys
+    natural_keys = x_key.get("natural_keys", [])
+    if natural_keys:
+        key_cols = ", ".join(natural_keys)
+        lines.append(f"spark.sql(\"ALTER TABLE {full_table} ADD CONSTRAINT uq_{table_name} UNIQUE ({key_cols})\")")
+
     # Foreign key constraints
     for field, prop in properties.items():
         if "x-key" in prop and "references" in prop["x-key"]:
