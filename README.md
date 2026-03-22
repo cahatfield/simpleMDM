@@ -6,14 +6,32 @@ No external dependencies. Pure Python standard library.
 
 ---
 
+## Package Layout
+
+The codebase now uses a package-first structure for modularity while preserving the original top-level scripts as compatibility wrappers.
+
+```
+simplemdm/
+  core/
+    schema_core.py            # Shared schema/type/key helpers
+  parsers/
+    schema_parser.py          # SchemaSpec/TableSpec parser layer
+  generators/
+    sqlite_db.py              # SQLite generator
+    spark_script.py           # Spark/Delta script generator
+    python_library.py         # Dataclass/repository generator
+  services/
+    generation.py             # Orchestrates all outputs from one schema
+```
+
 ## Toolkit Overview
 
 | Module | Purpose |
 |--------|---------|
 | `domain_schema_generator.py` | Define domain structure and generate JSON Schema files |
-| `build_sqlite_db.py` | Create a local SQLite database from a domain schema |
-| `build_spark_db.py` | Generate PySpark/Delta Lake setup scripts for Databricks |
-| `domain_python_library_generator.py` | Generate Python dataclass and repository classes |
+| `simplemdm.generators.sqlite_db` | Create a local SQLite database from a domain schema |
+| `simplemdm.generators.spark_script` | Generate PySpark/Delta Lake setup scripts for Databricks |
+| `simplemdm.generators.python_library` | Generate Python dataclass and repository classes |
 | `domain_contract_generator.py` | Create and manage data contracts for a domain |
 
 ---
@@ -22,7 +40,7 @@ No external dependencies. Pure Python standard library.
 
 - Python 3.10+
 - No external dependencies for schema generation and contract management
-- PySpark for `build_spark_db.py`
+- PySpark for `simplemdm.generators.spark_script`
 
 ---
 
@@ -33,12 +51,13 @@ from domain_schema_generator import domain
 
 # Build a full domain
 d = domain('Customer')
-d.create()
-d.add_key('email', 'first_name', 'last_name')
-d.add_status()
-d.add_type()
-d.add_attribute()
-d.add_hierarchy()
+d.create() \
+ .add_key('email', 'first_name', 'last_name') \
+ .add_status() \
+ .add_type() \
+ .add_attribute() \
+ .add_hierarchy() \
+ .save()
 ```
 
 This creates `domains/Customer/Customer.schema.json` — the foundation for all other toolkit outputs.
@@ -65,6 +84,8 @@ This creates `domains/Customer/Customer.schema.json` — the foundation for all 
 | `add_attribute()` | Add a flexible attribute system (attribute + bridge tables) |
 | `add_hierarchy()` | Add a hierarchy system (hierarchy type + parent/child value tables) |
 | `add_relationship(other_domain)` | Add a many-to-many bridge table to another domain |
+| `load()` | Load an existing schema for in-memory edits |
+| `save()` / `commit()` | Persist in-memory changes to disk |
 
 All methods return `self` so they can be chained:
 
@@ -85,7 +106,8 @@ contract('Customer') \
     .set_sla('daily', '99.9%') \
     .add_consumer('CRM System', 'Sales') \
     .add_quality_rule('Customer', 'email', not_null=True, unique=True) \
-    .set_status('active')
+  .set_status('active') \
+  .save()
 ```
 
 ### Methods
@@ -99,6 +121,8 @@ contract('Customer') \
 | `add_quality_rule(table, field, **rules)` | Add field-level quality constraints |
 | `set_status(status)` | Set lifecycle status: `draft`, `active`, or `deprecated` |
 | `add_changelog(version, description)` | Append a changelog entry |
+| `load()` | Load an existing contract for in-memory edits |
+| `save()` / `commit()` | Persist in-memory changes to disk |
 
 ---
 
@@ -143,3 +167,44 @@ domains/
 ## Detailed Documentation
 
 See [domain_schema_generator_guide.md](domain_schema_generator_guide.md) for full method reference and field-level schema documentation.
+
+---
+
+## Service API (Recommended)
+
+For one-call generation of all artifacts:
+
+```python
+from simplemdm.services.generation import generate_all_from_schema
+
+outputs = generate_all_from_schema("domains/Customer/Customer.schema.json")
+print(outputs)
+```
+
+---
+
+## CLI Usage
+
+Run via module:
+
+```powershell
+python -m simplemdm.cli --help
+```
+
+Common examples:
+
+```powershell
+# Create schema + common structures
+python -m simplemdm.cli schema Customer --key email first_name last_name --add-status --add-type --add-attribute --add-hierarchy
+
+# Generate individual artifacts
+python -m simplemdm.cli sqlite domains/Customer/Customer.schema.json
+python -m simplemdm.cli spark domains/Customer/Customer.schema.json --catalog main --schema customer
+python -m simplemdm.cli library domains/Customer/Customer.schema.json
+
+# Generate all artifacts
+python -m simplemdm.cli all domains/Customer/Customer.schema.json
+
+# Create contract
+python -m simplemdm.cli contract Customer --owner-name "Jane Smith" --owner-team "Customer Data" --owner-email jane.smith@example.com --status active
+```

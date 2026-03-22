@@ -320,7 +320,7 @@ Once the schema is generated, use the other tools in the simpleMDM toolkit:
 
 | Tool | Purpose |
 |------|---------|
-| `build_sqlite_db.py` | Create a local SQLite database from the schema |
-| `build_spark_db.py` | Generate PySpark/Delta Lake setup script for Databricks |
-| `domain_python_library_generator.py` | Generate Python dataclass + repository classes |
+| `simplemdm.generators.sqlite_db` | Create a local SQLite database from the schema |
+| `simplemdm.generators.spark_script` | Generate PySpark/Delta Lake setup script for Databricks |
+| `simplemdm.generators.python_library` | Generate Python dataclass + repository classes |
 | `domain_contract_generator.py` | Create and manage the data contract for the domain |

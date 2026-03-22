@@ -1,15 +1,21 @@
 
 import json
 import pathlib
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class contract:
-    def __init__(self, name: str):
+    def __init__(self, name: str, autosave: bool = False):
         self.name = name
+        self.autosave = autosave
+        self._data: dict | None = None
+        self._dirty = False
+
+    def _domain_folder(self) -> pathlib.Path:
+        return pathlib.Path("domains") / self.name
 
     def _contract_file(self) -> pathlib.Path:
-        return pathlib.Path("domains") / self.name / f"{self.name}.contract.json"
+        return self._domain_folder() / f"{self.name}.contract.json"
 
     def _read(self) -> dict:
         return json.loads(self._contract_file().read_text())
@@ -17,12 +23,49 @@ class contract:
     def _write(self, data: dict):
         self._contract_file().write_text(json.dumps(data, indent=2))
 
+    def _ensure_loaded(self):
+        if self._data is not None:
+            return
+        contract_file = self._contract_file()
+        if not contract_file.exists():
+            raise FileNotFoundError(
+                f"Contract not initialized for {self.name}. Call create() or load() first."
+            )
+        self._data = self._read()
+        self._dirty = False
+
+    def _touch(self):
+        self._dirty = True
+        if self.autosave:
+            self.save()
+
+    def load(self):
+        """Load an existing contract into memory for mutation."""
+        self._data = self._read()
+        self._dirty = False
+        return self
+
+    def save(self) -> pathlib.Path:
+        """Persist in-memory contract changes to disk."""
+        self._ensure_loaded()
+        self._write(self._data)
+        self._dirty = False
+        return self._contract_file()
+
+    def commit(self) -> pathlib.Path:
+        """Alias for save() to support explicit commit workflows."""
+        return self.save()
+
+    @property
+    def is_dirty(self) -> bool:
+        return self._dirty
+
     def create(self):
         """Initialise a new data contract for the domain."""
-        folder = pathlib.Path("domains") / self.name
+        folder = self._domain_folder()
         folder.mkdir(parents=True, exist_ok=True)
 
-        data = {
+        self._data = {
             "contract_version": "1.0.0",
             "domain": self.name,
             "schema_ref": f"{self.name}.schema.json",
@@ -41,13 +84,15 @@ class contract:
             "changelog": [
                 {
                     "version": "1.0.0",
-                    "date": datetime.utcnow().strftime("%Y-%m-%d"),
+                    "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
                     "description": f"Initial contract for {self.name} domain",
                 }
             ],
         }
 
-        self._write(data)
+        self._dirty = True
+        if self.autosave:
+            self.save()
         return self
 
     def set_owner(self, name: str, team: str, email: str):
@@ -58,9 +103,10 @@ class contract:
             team:  Team responsible for this domain.
             email: Contact email for the owner.
         """
-        data = self._read()
+        self._ensure_loaded()
+        data = self._data
         data["owner"] = {"name": name, "team": team, "email": email}
-        self._write(data)
+        self._touch()
         return self
 
     def set_sla(self, freshness: str, availability: str):
@@ -70,9 +116,10 @@ class contract:
             freshness:    How often data is updated (e.g. 'daily', 'hourly', 'realtime').
             availability: Uptime target (e.g. '99.9%').
         """
-        data = self._read()
+        self._ensure_loaded()
+        data = self._data
         data["sla"] = {"freshness": freshness, "availability": availability}
-        self._write(data)
+        self._touch()
         return self
 
     def add_consumer(self, name: str, team: str):
@@ -82,11 +129,12 @@ class contract:
             name: Name of the consuming system or person.
             team: Team that owns the consumer.
         """
-        data = self._read()
+        self._ensure_loaded()
+        data = self._data
         consumer = {"name": name, "team": team}
         if consumer not in data["consumers"]:
             data["consumers"].append(consumer)
-        self._write(data)
+        self._touch()
         return self
 
     def add_quality_rule(self, table: str, field: str, **rules):
@@ -103,9 +151,10 @@ class contract:
                      unique=True
                      allowed_values=["active", "inactive"]
         """
-        data = self._read()
+        self._ensure_loaded()
+        data = self._data
         data["quality_rules"].setdefault(table, {}).setdefault(field, {}).update(rules)
-        self._write(data)
+        self._touch()
         return self
 
     def set_status(self, status: str):
@@ -117,9 +166,10 @@ class contract:
         valid = ("draft", "active", "deprecated")
         if status not in valid:
             raise ValueError(f"status must be one of {valid}, got {status!r}")
-        data = self._read()
+        self._ensure_loaded()
+        data = self._data
         data["status"] = status
-        self._write(data)
+        self._touch()
         return self
 
     def add_changelog(self, version: str, description: str):
@@ -129,12 +179,13 @@ class contract:
             version:     Semantic version string (e.g. '1.1.0').
             description: What changed in this version.
         """
-        data = self._read()
+        self._ensure_loaded()
+        data = self._data
         data["contract_version"] = version
         data["changelog"].append({
             "version": version,
-            "date": datetime.utcnow().strftime("%Y-%m-%d"),
+            "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
             "description": description,
         })
-        self._write(data)
+        self._touch()
         return self

@@ -45,15 +45,60 @@ def _audit_fields() -> dict:
 
 
 class domain:
-    def __init__(self, name, destination=None):
+    def __init__(self, name, destination=None, autosave: bool = False):
         self.name = name
         self.destination = pathlib.Path(destination) if destination else pathlib.Path("domains")
+        self.autosave = autosave
+        self._schema: dict | None = None
+        self._dirty = False
+
+    def _schema_file(self) -> pathlib.Path:
+        return self.destination / self.name / f"{self.name}.schema.json"
+
+    def _read_schema(self) -> dict:
+        return json.loads(self._schema_file().read_text())
+
+    def _write_schema(self, schema: dict):
+        self._schema_file().write_text(json.dumps(_normalize_schema(schema), indent=2))
+
+    def _ensure_schema_loaded(self):
+        if self._schema is not None:
+            return
+        schema_file = self._schema_file()
+        if not schema_file.exists():
+            raise FileNotFoundError(
+                f"Schema not initialized for {self.name}. Call create() or load() first."
+            )
+        self._schema = self._read_schema()
+        self._dirty = False
+
+    def _touch(self):
+        self._dirty = True
+        if self.autosave:
+            self.save()
+
+    def load(self):
+        """Load an existing schema into memory for mutation."""
+        self._schema = self._read_schema()
+        self._dirty = False
+        return self
+
+    def save(self) -> pathlib.Path:
+        """Persist in-memory schema changes to disk."""
+        self._ensure_schema_loaded()
+        self._write_schema(self._schema)
+        self._dirty = False
+        return self._schema_file()
+
+    def commit(self) -> pathlib.Path:
+        """Alias for save() to support explicit commit workflows."""
+        return self.save()
 
     def create(self, version: str = "1.0.0"):
         folder = self.destination / self.name
         folder.mkdir(parents=True, exist_ok=True)
 
-        schema = {
+        self._schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "title": self.name,
             "version": version,
@@ -61,10 +106,14 @@ class domain:
             "properties": {**_audit_fields()},
             "required": [],
         }
+        self._dirty = True
+        if self.autosave:
+            self.save()
+        return self
 
-        schema_file = folder / f"{self.name}.schema.json"
-        schema_file.write_text(json.dumps(_normalize_schema(schema), indent=2))
-        return schema_file
+    @property
+    def is_dirty(self) -> bool:
+        return self._dirty
 
     def add_key(self, *fields: str):
         """Define the key for the domain.
@@ -78,8 +127,8 @@ class domain:
         if not fields:
             raise ValueError("At least one field name must be provided")
 
-        schema_file = self.destination / self.name / f"{self.name}.schema.json"
-        schema = json.loads(schema_file.read_text())
+        self._ensure_schema_loaded()
+        schema = self._schema
 
         identity_field = f"{self.name.lower()}_id"
 
@@ -107,7 +156,7 @@ class domain:
             "natural_keys": list(fields),
         }
 
-        schema_file.write_text(json.dumps(_normalize_schema(schema), indent=2))
+        self._touch()
         return self
 
     def add_status(self, key_type: str = "uuid"):
@@ -124,8 +173,8 @@ class domain:
         if key_type not in type_map:
             raise ValueError(f"key_type must be one of {list(type_map)}, got {key_type!r}")
 
-        schema_file = self.destination / self.name / f"{self.name}.schema.json"
-        schema = json.loads(schema_file.read_text())
+        self._ensure_schema_loaded()
+        schema = self._schema
 
         status_table = f"{self.name}_Status"
 
@@ -162,7 +211,7 @@ class domain:
         if "status_id" not in schema["required"]:
             schema["required"].append("status_id")
 
-        schema_file.write_text(json.dumps(_normalize_schema(schema), indent=2))
+        self._touch()
         return self
 
     def add_type(self, key_type: str = "uuid"):
@@ -179,8 +228,8 @@ class domain:
         if key_type not in type_map:
             raise ValueError(f"key_type must be one of {list(type_map)}, got {key_type!r}")
 
-        schema_file = self.destination / self.name / f"{self.name}.schema.json"
-        schema = json.loads(schema_file.read_text())
+        self._ensure_schema_loaded()
+        schema = self._schema
 
         type_table = f"{self.name}_Type"
 
@@ -217,13 +266,13 @@ class domain:
         if "type_id" not in schema["required"]:
             schema["required"].append("type_id")
 
-        schema_file.write_text(json.dumps(_normalize_schema(schema), indent=2))
+        self._touch()
         return self
 
     def add_attribute(self):
         """Add an attribute reference table and bridge table for the domain."""
-        schema_file = self.destination / self.name / f"{self.name}.schema.json"
-        schema = json.loads(schema_file.read_text())
+        self._ensure_schema_loaded()
+        schema = self._schema
 
         identity_field = f"{self.name.lower()}_id"
         attribute_table = f"{self.name}_Attribute"
@@ -295,13 +344,13 @@ class domain:
             },
         }
 
-        schema_file.write_text(json.dumps(_normalize_schema(schema), indent=2))
+        self._touch()
         return self
 
     def add_hierarchy(self):
         """Add a hierarchy type table and hierarchy value table for the domain."""
-        schema_file = self.destination / self.name / f"{self.name}.schema.json"
-        schema = json.loads(schema_file.read_text())
+        self._ensure_schema_loaded()
+        schema = self._schema
 
         n = self.name.lower()
         hierarchy_table = f"{self.name}_Hierarchy"
@@ -380,7 +429,7 @@ class domain:
             },
         }
 
-        schema_file.write_text(json.dumps(_normalize_schema(schema), indent=2))
+        self._touch()
         return self
 
     def add_relationship(self, other_domain: str):
@@ -389,8 +438,8 @@ class domain:
         Args:
             other_domain: Name of the other domain to relate to (e.g. 'Product').
         """
-        schema_file = self.destination / self.name / f"{self.name}.schema.json"
-        schema = json.loads(schema_file.read_text())
+        self._ensure_schema_loaded()
+        schema = self._schema
 
         n1 = self.name.lower()
         n2 = other_domain.lower()
@@ -432,5 +481,5 @@ class domain:
             },
         }
 
-        schema_file.write_text(json.dumps(_normalize_schema(schema), indent=2))
+        self._touch()
         return self
