@@ -53,10 +53,7 @@ def generate_class(table: TableSpec) -> str:
     if identity:
         lines.append(f"        {identity} = str(uuid.uuid4())")
 
-    values_list = []
-    for field in col_names:
-        values_list.append(field)
-    values_str = ", ".join(values_list)
+    values_str = ", ".join(col_names)
 
     lines.append("        with sqlite3.connect(self.db_path) as conn:")
     lines.append("            conn.execute(")

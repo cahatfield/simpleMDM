@@ -17,17 +17,19 @@ def build_table_block(table: TableSpec, catalog: str, schema: str) -> list[str]:
     full_table = f"{catalog}.{schema}.{table.name}"
     description = table.description
 
+    not_null_fields = required_not_null_fields(properties, table.required)
+    not_null_set = set(not_null_fields)
+
     lines = []
 
     schema_var = f"{table.name.lower()}_schema"
     lines.append(f"{schema_var} = StructType([")
     for field, prop in properties.items():
         py_type = pyspark_type(prop)
-        is_identity = prop.get("readOnly") and prop.get("format") == "uuid"
-        nullable = "False" if field in table.required or prop.get("nullable") is False or is_identity else "True"
+        nullable = "False" if field in not_null_set else "True"
         comment = prop.get("description", "").replace("'", "\\'")
         lines.append(f"    StructField('{field}', {py_type}, nullable={nullable}),  # {comment}")
-    lines.append("])" )
+    lines.append("])")
     lines.append("")
 
     lines.append("(")
@@ -40,7 +42,6 @@ def build_table_block(table: TableSpec, catalog: str, schema: str) -> list[str]:
     lines.append(")")
     lines.append("")
 
-    not_null_fields = required_not_null_fields(properties, table.required)
     for field in not_null_fields:
         lines.append(f"spark.sql(\"ALTER TABLE {full_table} ALTER COLUMN {field} SET NOT NULL\")")
     if not_null_fields:
