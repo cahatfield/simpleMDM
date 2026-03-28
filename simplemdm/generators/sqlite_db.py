@@ -1,7 +1,7 @@
 import pathlib
 import sqlite3
 
-from simplemdm.core.schema_core import foreign_keys, identity_field, sqlite_type
+from simplemdm.core.schema_core import foreign_keys, identity_field, required_not_null_fields, sqlite_type
 from simplemdm.parsers.schema_parser import TableSpec, parse_schema_file
 
 
@@ -9,13 +9,14 @@ def build_table_sql(table: TableSpec) -> str:
     properties = table.properties
     identity = identity_field({"x-key": table.x_key, "properties": properties})
     composite_key = table.x_key.get("composite_key", [])
+    not_null_set = set(required_not_null_fields(properties, table.required))
 
     columns = []
     fk_constraints = []
 
     for field, prop in properties.items():
         col_type = sqlite_type(prop)
-        not_null = "NOT NULL" if field in table.required else ""
+        not_null = "NOT NULL" if field in not_null_set else ""
 
         if field == identity:
             columns.append(f"    {field} {col_type} PRIMARY KEY")
@@ -39,8 +40,7 @@ def build_db_from_schema(schema_path: str) -> str:
     domain_name = spec.domain_name
     db_path = schema_path.parent / f"{domain_name}.db"
 
-    if db_path.exists():
-        db_path.unlink()
+    db_path.unlink(missing_ok=True)
 
     conn = sqlite3.connect(db_path)
     conn.execute("PRAGMA foreign_keys = ON")
